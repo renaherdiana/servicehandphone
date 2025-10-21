@@ -83,6 +83,20 @@
                    min="0" value="{{ old('payment_amount', $service->payment_amount) }}">
           </div>
 
+          <!-- Service Status -->
+            <div class="mb-4">
+              <label for="status" class="form-label fw-semibold text-primary">Service Status</label>
+              <select name="status" id="status" 
+                      class="form-select rounded-3 shadow-sm border-0" required
+                      style="width: 100%; height: 55px;">
+                <option value="accepted" {{ $service->status == 'accepted' ? 'selected' : '' }}>Accepted</option>
+                <option value="process" {{ $service->status == 'process' ? 'selected' : '' }}>Process</option>
+                <option value="finished" {{ $service->status == 'finished' ? 'selected' : '' }}>Finished</option>
+                <option value="taken" {{ $service->status == 'taken' ? 'selected' : '' }}>Taken</option>
+                <option value="cancelled" {{ $service->status == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+              </select>
+            </div>
+
           <div class="mb-4">
             <label for="payment_method" class="form-label fw-semibold">Metode Pembayaran</label>
             <select class="form-select" id="payment_method" name="payment_method"

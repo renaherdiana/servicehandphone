@@ -33,7 +33,7 @@
                 <th>Handphone</th>
                 <th>Teknisi</th>
                 <th>Estimasi Biaya</th>
-                <th>Status</th>
+                <th>Status Servis</th>
                 <th class="text-center">Aksi</th>
               </tr>
             </thead>
@@ -60,19 +60,27 @@
                 {{-- 🔹 Estimasi Biaya --}}
                 <td>Rp {{ number_format($s->cost ?? 0, 0, ',', '.') }}</td>
 
-                {{-- 🔹 Status --}}
+                {{-- 🔹 Status Servis --}}
                 <td>
-                  @if($s->status === 'accepted')
-                    <span class="btn-status active">Accepted</span>
-                  @elseif($s->status === 'process')
-                    <span class="btn-status process">Proses</span>
-                  @elseif($s->status === 'finished')
-                    <span class="btn-status finished">Finished</span>
-                  @elseif($s->status === 'taken')
-                    <span class="btn-status taken">Taken</span>
-                  @elseif($s->status === 'cancelled')
-                    <span class="btn-status cancelled">Cancelled</span>
-                  @endif
+                  @switch($s->status)
+                      @case('accepted')
+                          <span class="btn-status accepted">Accepted</span>
+                          @break
+                      @case('process')
+                          <span class="btn-status process">Process</span>
+                          @break
+                      @case('finished')
+                          <span class="btn-status finished">Finished</span>
+                          @break
+                      @case('taken')
+                          <span class="btn-status taken">Taken</span>
+                          @break
+                      @case('cancelled')
+                          <span class="btn-status cancelled">Cancelled</span>
+                          @break
+                      @default
+                          <span class="btn-status unknown">Unknown</span>
+                  @endswitch
                 </td>
 
                 {{-- 🔹 Aksi --}}
@@ -80,14 +88,12 @@
                   <a href="{{ route('service.show', $s->id) }}" class="btn-action btn-detail me-1">Detail</a>
                   <a href="{{ route('service.edit', $s->id) }}" class="btn-action btn-edit me-1">Edit</a>
                   
-                  @if($s->status !== 'taken')
-                    <form action="{{ route('service.destroy', $s->id) }}" method="POST" style="display:inline;">
-                      @csrf
-                      @method('DELETE')
-                      <button type="submit" class="btn-action btn-delete border-0"
-                              onclick="return confirm('Yakin ingin menghapus data ini?')">Delete</button>
-                    </form>
-                  @endif
+                  <form action="{{ route('service.destroy', $s->id) }}" method="POST" style="display:inline;">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn-action btn-delete border-0"
+                            onclick="return confirm('Yakin ingin menghapus data ini?')">Delete</button>
+                  </form>
                 </td>
               </tr>
               @empty
@@ -104,7 +110,7 @@
 </div>
 
 <style>
-  /* Tabel aesthetic */
+  /* Table aesthetic */
   .custom-striped tbody tr:nth-child(odd) { background-color: #FAFAFA; }
   .custom-striped tbody tr:nth-child(even) { background-color: #FFFFFF; }
   .custom-striped tbody tr:hover { background-color: #EEF2FF; transition: 0.3s ease; }
@@ -123,7 +129,7 @@
     transform: scale(1.05);
     opacity: 0.95;
   }
-  .btn-detail { background-color: #D6E4FF; color: #3F51B5; }
+  .btn-detail { background-color: #E3F2FD; color: #1976D2; }
   .btn-edit { background-color: #FFF3E0; color: #F57C00; }
   .btn-delete { background-color: #FFEBEE; color: #E53935; }
 
@@ -137,10 +143,11 @@
     font-weight: 600;
     letter-spacing: .3px;
   }
-  .btn-status.active { background-color: #E3F2FD; color: #1976D2; }
-  .btn-status.process { background-color: #FFF3E0; color: #F57C00; }
-  .btn-status.finished { background-color: #E8F5E9; color: #388E3C; }
-  .btn-status.taken { background-color: #E1F5FE; color: #0288D1; }
-  .btn-status.cancelled { background-color: #FFEBEE; color: #E53935; }
+  .btn-status.accepted  { background-color: #E3F2FD; color: #1565C0; }
+  .btn-status.process   { background-color: #FFF3E0; color: #F57C00; }
+  .btn-status.finished  { background-color: #E8F5E9; color: #388E3C; }
+  .btn-status.taken     { background-color: #E1F5FE; color: #0288D1; }
+  .btn-status.cancelled { background-color: #FFEBEE; color: #D32F2F; }
+  .btn-status.unknown   { background-color: #F3E5F5; color: #7B1FA2; }
 </style>
 @endsection
