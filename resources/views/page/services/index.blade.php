@@ -27,20 +27,18 @@
           <table class="table align-middle mb-0 custom-striped">
             <thead style="background-color:#EEF2FF; color:#3F51B5;">
               <tr>
-                <th>No</th>
                 <th>No. Invoice</th>
                 <th>Pelanggan</th>
                 <th>Handphone</th>
                 <th>Teknisi</th>
                 <th>Estimasi Biaya</th>
-                <th>Status Servis</th>
+                <th>Status</th>
                 <th class="text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
-              @forelse ($services as $index => $s)
+              @forelse ($services as $s)
               <tr>
-                <td>{{ $index + 1 }}</td>
                 <td>{{ $s->invoice }}</td>
 
                 {{-- 🔹 Nama pelanggan --}}
@@ -98,7 +96,7 @@
               </tr>
               @empty
               <tr>
-                <td colspan="8" class="text-center text-muted py-4">Belum ada data servis.</td>
+                <td colspan="7" class="text-center text-muted py-4">Belum ada data servis.</td>
               </tr>
               @endforelse
             </tbody>

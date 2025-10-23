@@ -21,7 +21,6 @@
           <table class="table align-middle text-center custom-striped mb-0">
             <thead style="background-color:#EEF2FF; color:#3F51B5;">
               <tr>
-                <th>No</th>
                 <th>Invoice</th>
                 <th>Nama Pelanggan</th>
                 <th>Total Biaya</th>
@@ -30,7 +29,7 @@
               </tr>
             </thead>
             <tbody>
-              @forelse($services as $index => $service)
+              @forelse($services as $service)
                 @php
                   $status = $service->status_paid ?? 'unpaid';
                   $badgeClass = match($status) {
@@ -46,7 +45,6 @@
                 @endphp
 
                 <tr>
-                  <td>{{ $index + 1 }}</td>
                   <td><strong>{{ $service->invoice }}</strong></td>
                   <td>{{ $service->customer->name ?? '-' }}</td>
                   <td>Rp {{ number_format($service->cost ?? 0, 0, ',', '.') }}</td>
@@ -64,7 +62,7 @@
                 </tr>
               @empty
                 <tr>
-                  <td colspan="6" class="text-muted py-4">Belum ada data servis.</td>
+                  <td colspan="5" class="text-muted py-4">Belum ada data servis.</td>
                 </tr>
               @endforelse
             </tbody>
