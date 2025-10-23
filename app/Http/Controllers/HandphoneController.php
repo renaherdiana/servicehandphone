@@ -32,11 +32,25 @@ class HandphoneController extends Controller
             'is_active'    => 'required|string|in:active,nonactive',
         ]);
 
+        // 🔍 CEK DUPLIKAT BRAND + MODEL
+        $existing = Handphone::where('brand', $request->brand)
+            ->where('model', $request->model)
+            ->first();
+
+        if ($existing) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', '⚠️ Handphone dengan brand dan model yang sama sudah ada!');
+        }
+
+        // 📸 SIMPAN GAMBAR
         $imagePath = null;
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('handphones', 'public');
         }
 
+        // 💾 SIMPAN DATA
         Handphone::create([
             'image'        => $imagePath,
             'brand'        => $request->brand,
@@ -77,6 +91,20 @@ class HandphoneController extends Controller
 
         $handphone = Handphone::findOrFail($id);
 
+        // 🔍 CEK DUPLIKAT BRAND + MODEL (kecuali dirinya sendiri)
+        $existing = Handphone::where('brand', $request->brand)
+            ->where('model', $request->model)
+            ->where('id', '!=', $id)
+            ->first();
+
+        if ($existing) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', '⚠️ Handphone dengan brand dan model yang sama sudah ada!');
+        }
+
+        // 📸 UPDATE GAMBAR (kalau ada yang baru)
         if ($request->hasFile('image')) {
             if ($handphone->image && Storage::disk('public')->exists($handphone->image)) {
                 Storage::disk('public')->delete($handphone->image);
@@ -84,6 +112,7 @@ class HandphoneController extends Controller
             $handphone->image = $request->file('image')->store('handphones', 'public');
         }
 
+        // 💾 UPDATE DATA
         $handphone->update([
             'brand'        => $request->brand,
             'model'        => $request->model,
@@ -102,10 +131,12 @@ class HandphoneController extends Controller
     {
         $handphone = Handphone::findOrFail($id);
 
+        // 🧹 HAPUS GAMBAR JIKA ADA
         if ($handphone->image && Storage::disk('public')->exists($handphone->image)) {
             Storage::disk('public')->delete($handphone->image);
         }
 
+        // ❌ HAPUS DATA
         $handphone->delete();
 
         return redirect()
