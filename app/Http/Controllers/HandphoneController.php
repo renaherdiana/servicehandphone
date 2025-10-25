@@ -8,11 +8,31 @@ use Illuminate\Support\Facades\Storage;
 
 class HandphoneController extends Controller
 {
-    // 🟦 TAMPIL SEMUA HANDPHONE
-    public function index()
+    // 🟦 TAMPIL SEMUA HANDPHONE (dengan fitur SEARCH)
+    public function index(Request $request)
     {
-        $handphones = Handphone::all();
+        $query = Handphone::query();
+
+        // 🔍 Jika ada pencarian
+        if ($request->has('search') && $request->search != '') {
+            $search = $request->search;
+
+            $query->where('brand', 'like', "%{$search}%")
+                  ->orWhere('model', 'like', "%{$search}%")
+                  ->orWhere('release_year', 'like', "%{$search}%");
+        }
+
+        // Ambil data terbaru
+        $handphones = $query->latest()->get();
+
         return view('page.handphone.index', compact('handphones'));
+    }
+
+    // 🟦 TAMPIL DATA YANG DIHAPUS (TRASH)
+    public function trash()
+    {
+        $handphones = Handphone::onlyTrashed()->latest()->get();
+        return view('page.handphone.trash', compact('handphones'));
     }
 
     // 🟩 FORM TAMBAH
@@ -126,21 +146,42 @@ class HandphoneController extends Controller
             ->with('success', '🔄 Data handphone berhasil diperbarui.');
     }
 
-    // 🟥 HAPUS DATA
+    // 🟥 HAPUS DATA (SOFT DELETE)
     public function destroy($id)
     {
         $handphone = Handphone::findOrFail($id);
+        $handphone->delete(); // sekarang hanya soft delete
 
-        // 🧹 HAPUS GAMBAR JIKA ADA
+        return redirect()
+            ->route('handphone.index')
+            ->with('success', '🗑️ Data handphone berhasil dipindahkan ke trash.');
+    }
+
+    // ♻️ RESTORE DATA
+    public function restore($id)
+    {
+        $handphone = Handphone::onlyTrashed()->findOrFail($id);
+        $handphone->restore();
+
+        return redirect()
+            ->route('handphone.trash')
+            ->with('success', '✅ Data handphone berhasil dipulihkan.');
+    }
+
+    // 🚮 HAPUS PERMANEN
+    public function forceDelete($id)
+    {
+        $handphone = Handphone::onlyTrashed()->findOrFail($id);
+
+        // hapus gambar dari storage juga
         if ($handphone->image && Storage::disk('public')->exists($handphone->image)) {
             Storage::disk('public')->delete($handphone->image);
         }
 
-        // ❌ HAPUS DATA
-        $handphone->delete();
+        $handphone->forceDelete();
 
         return redirect()
-            ->route('handphone.index')
-            ->with('success', '🗑️ Data handphone berhasil dihapus.');
+            ->route('handphone.trash')
+            ->with('success', '❌ Data handphone dihapus permanen.');
     }
 }

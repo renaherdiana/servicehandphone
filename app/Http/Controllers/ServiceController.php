@@ -11,14 +11,26 @@ use Illuminate\Http\Request;
 
 class ServiceController extends Controller
 {
-    /** 🔹 List all services */
-    public function index()
+    /** 🔹 List all services (dengan pencarian) */
+    public function index(Request $request)
     {
+        $search = $request->input('search');
+
         $services = Service::with(['handphone', 'customer', 'technician'])
+            ->when($search, function ($query, $search) {
+                $query->where('invoice', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('handphone', function ($q) use ($search) {
+                        $q->where('brand', 'like', "%{$search}%")
+                          ->orWhere('model', 'like', "%{$search}%");
+                    });
+            })
             ->latest()
             ->get();
 
-        return view('page.services.index', compact('services'));
+        return view('page.services.index', compact('services', 'search'));
     }
 
     /** 🔹 Show form to create a new service */
@@ -49,10 +61,8 @@ class ServiceController extends Controller
 
         $validated['payment_amount'] = $validated['payment_amount'] ?? 0;
 
-        // 🔹 Calculate total cost
         $totalCost = collect($validated['products'] ?? [])->sum('subtotal');
 
-        // 🔹 Determine payment status
         $statusPaid = 'unpaid';
         if ($validated['payment_amount'] >= $totalCost && $totalCost > 0) {
             $statusPaid = 'paid';
@@ -60,20 +70,18 @@ class ServiceController extends Controller
             $statusPaid = 'debt';
         }
 
-        // 🔹 Create new service
         $service = Service::create([
             'invoice'        => $validated['invoice'],
             'customer_id'    => $validated['customer_id'],
             'handphone_id'   => $validated['handphone_id'],
             'technician_id'  => $validated['technician_id'],
             'cost'           => $totalCost,
-            'status'         => 'accepted', // ✅ default English version
+            'status'         => 'accepted',
             'payment_amount' => $validated['payment_amount'],
             'payment_method' => $validated['payment_method'],
             'status_paid'    => $statusPaid,
         ]);
 
-        // 🔹 Attach service items
         if (!empty($validated['products'])) {
             $syncData = [];
             foreach ($validated['products'] as $prod) {
@@ -124,10 +132,8 @@ class ServiceController extends Controller
 
         $validated['payment_amount'] = $validated['payment_amount'] ?? 0;
 
-        // 🔹 Recalculate total cost
         $totalCost = collect($validated['products'] ?? [])->sum('subtotal');
 
-        // 🔹 Determine payment status
         $statusPaid = 'unpaid';
         if ($validated['payment_amount'] >= $totalCost && $totalCost > 0) {
             $statusPaid = 'paid';
@@ -135,20 +141,18 @@ class ServiceController extends Controller
             $statusPaid = 'debt';
         }
 
-        // 🔹 Update main service data
         $service->update([
             'invoice'        => $validated['invoice'],
             'customer_id'    => $validated['customer_id'],
             'handphone_id'   => $validated['handphone_id'],
             'technician_id'  => $validated['technician_id'],
             'cost'           => $totalCost,
-            'status'         => $validated['status'], // ✅ now editable
+            'status'         => $validated['status'],
             'payment_amount' => $validated['payment_amount'],
             'payment_method' => $validated['payment_method'],
             'status_paid'    => $statusPaid,
         ]);
 
-        // 🔹 Sync service items
         $syncData = [];
         if (!empty($validated['products'])) {
             foreach ($validated['products'] as $prod) {

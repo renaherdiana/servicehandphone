@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes; 
 
 class Handphone extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes; 
 
     protected $fillable = [
         'brand',
@@ -17,10 +18,6 @@ class Handphone extends Model
         'is_active',
     ];
 
-    /**
-     * Relasi ke tabel services
-     * Satu handphone bisa punya banyak service
-     */
     public function services()
     {
         return $this->hasMany(Service::class, 'handphone_id');

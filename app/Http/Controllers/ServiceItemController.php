@@ -7,20 +7,36 @@ use Illuminate\Http\Request;
 
 class ServiceItemController extends Controller
 {
-    // 🟦 Tampilkan semua data
-    public function index()
+    /**
+     * 🟦 Tampilkan semua data + fitur pencarian
+     */
+    public function index(Request $request)
     {
-        $serviceItems = ServiceItem::orderBy('created_at', 'desc')->get();
+        $query = ServiceItem::query();
+
+        // 🔍 Jika ada pencarian
+        if ($request->has('search') && $request->search != '') {
+            $search = $request->search;
+            $query->where('name', 'like', "%{$search}%")
+                  ->orWhere('price', 'like', "%{$search}%");
+        }
+
+        $serviceItems = $query->latest()->get();
+
         return view('page.serviceitem.index', compact('serviceItems'));
     }
 
-    // 🟩 Form tambah data
+    /**
+     * 🟩 Form tambah data
+     */
     public function create()
     {
         return view('page.serviceitem.create');
     }
 
-    // 🟨 Simpan data baru
+    /**
+     * 🟨 Simpan data baru
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -29,34 +45,29 @@ class ServiceItemController extends Controller
             'is_active' => 'required|boolean',
         ]);
 
-        // 🔍 Cek apakah sudah ada nama service yang sama
-        $existing = ServiceItem::where('name', $request->name)->first();
-        if ($existing) {
-            return redirect()
-                ->back()
-                ->withInput()
-                ->with('error', '⚠️ Item servis dengan nama yang sama sudah ada!');
+        // 🔍 Cek duplikat
+        $exists = ServiceItem::where('name', $request->name)->first();
+        if ($exists) {
+            return back()->withInput()->with('error', '⚠️ Nama item servis sudah ada!');
         }
 
-        ServiceItem::create([
-            'name' => $request->name,
-            'price' => $request->price,
-            'is_active' => $request->is_active,
-        ]);
+        ServiceItem::create($request->only(['name', 'price', 'is_active']));
 
-        return redirect()
-            ->route('service.item')
-            ->with('success', '✅ Item servis berhasil ditambahkan!');
+        return redirect()->route('service.item')->with('success', '✅ Item servis berhasil ditambahkan!');
     }
 
-    // 🟦 Form edit item
+    /**
+     * 🟦 Form edit item
+     */
     public function edit($id)
     {
         $serviceItem = ServiceItem::findOrFail($id);
         return view('page.serviceitem.edit', compact('serviceItem'));
     }
 
-    // 🟨 Update item
+    /**
+     * 🟨 Update item
+     */
     public function update(Request $request, $id)
     {
         $request->validate([
@@ -67,37 +78,59 @@ class ServiceItemController extends Controller
 
         $serviceItem = ServiceItem::findOrFail($id);
 
-        // 🔍 Cek duplikat nama (kecuali dirinya sendiri)
-        $existing = ServiceItem::where('name', $request->name)
+        // Cek duplikat nama (kecuali dirinya sendiri)
+        $exists = ServiceItem::where('name', $request->name)
             ->where('id', '!=', $id)
             ->first();
 
-        if ($existing) {
-            return redirect()
-                ->back()
-                ->withInput()
-                ->with('error', '⚠️ Item servis dengan nama yang sama sudah ada!');
+        if ($exists) {
+            return back()->withInput()->with('error', '⚠️ Nama item servis sudah ada!');
         }
 
-        $serviceItem->update([
-            'name' => $request->name,
-            'price' => $request->price,
-            'is_active' => $request->is_active,
-        ]);
+        $serviceItem->update($request->only(['name', 'price', 'is_active']));
 
-        return redirect()
-            ->route('service.item')
-            ->with('success', '🔄 Item servis berhasil diperbarui!');
+        return redirect()->route('service.item')->with('success', '🔄 Item servis berhasil diperbarui!');
     }
 
-    // 🟥 Hapus item
+    /**
+     * 🟥 Soft delete item
+     */
     public function destroy($id)
     {
         $serviceItem = ServiceItem::findOrFail($id);
         $serviceItem->delete();
 
-        return redirect()
-            ->route('service.item')
-            ->with('success', '🗑️ Item servis berhasil dihapus!');
+        return redirect()->route('service.item')->with('success', '🗑️ Item servis berhasil dihapus (masuk trash)!');
+    }
+
+    /**
+     * 🗑️ Tampilkan data yang dihapus (trash)
+     */
+    public function trash()
+    {
+        $serviceItems = ServiceItem::onlyTrashed()->latest()->get();
+        return view('page.serviceitem.trash', compact('serviceItems'));
+    }
+
+    /**
+     * ♻️ Restore data dari trash
+     */
+    public function restore($id)
+    {
+        $serviceItem = ServiceItem::onlyTrashed()->findOrFail($id);
+        $serviceItem->restore();
+
+        return redirect()->route('service.item.trash')->with('success', '♻️ Item servis berhasil dipulihkan!');
+    }
+
+    /**
+     * ❌ Hapus permanen dari trash
+     */
+    public function forceDelete($id)
+    {
+        $serviceItem = ServiceItem::onlyTrashed()->findOrFail($id);
+        $serviceItem->forceDelete();
+
+        return redirect()->route('service.item.trash')->with('success', '🧹 Item servis berhasil dihapus permanen!');
     }
 }

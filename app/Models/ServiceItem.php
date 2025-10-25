@@ -2,17 +2,22 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ServiceItem extends Model
 {
-    protected $fillable = ['name', 'price', 'is_active'];
+    use HasFactory, SoftDeletes; 
 
-    // ✅ relasi balik ke Service
-    public function service_items()
+    protected $fillable = [
+        'name',
+        'price',
+        'is_active',
+    ];
+
+    public function services()
     {
-        return $this->belongsToMany(ServiceItem::class)
-                    ->withTimestamps();
+        return $this->hasMany(Service::class, 'service_item_id');
     }
-
 }

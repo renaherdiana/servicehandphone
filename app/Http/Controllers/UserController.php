@@ -9,10 +9,16 @@ use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
-    /** 🔹 Tampilkan daftar pengguna */
-    public function index()
+    /** 🔹 Tampilkan daftar pengguna (aktif) + pencarian */
+    public function index(Request $request)
     {
-        $users = User::latest()->get();
+        $query = User::query();
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        $users = $query->latest()->get();
         return view('page.user.index', compact('users'));
     }
 
@@ -43,7 +49,6 @@ class UserController extends Controller
         $user->no_telp  = $request->no_telp;
         $user->status   = $request->status;
 
-        // 🖼️ Simpan foto ke storage/public/users
         if ($request->hasFile('foto')) {
             $path = $request->file('foto')->store('users', 'public');
             $user->foto = $path;
@@ -89,14 +94,11 @@ class UserController extends Controller
         $user->no_telp = $request->no_telp;
         $user->status  = $request->status;
 
-        // 🔑 Ganti password kalau diisi
         if ($request->filled('password')) {
             $user->password = Hash::make($request->password);
         }
 
-        // 🖼️ Ganti foto jika ada upload baru
         if ($request->hasFile('foto')) {
-            // Hapus foto lama jika ada
             if ($user->foto && Storage::exists('public/' . $user->foto)) {
                 Storage::delete('public/' . $user->foto);
             }
@@ -110,18 +112,40 @@ class UserController extends Controller
         return redirect()->route('pengguna.index')->with('success', 'Data pengguna berhasil diperbarui.');
     }
 
-    /** 🔹 Hapus pengguna */
+    /** 🔹 Soft Delete pengguna (pindah ke trash) */
     public function destroy($id)
     {
         $user = User::findOrFail($id);
+        $user->delete(); // pakai SoftDeletes
+        return redirect()->route('pengguna.index')->with('success', 'Data pengguna berhasil dipindahkan ke sampah.');
+    }
 
-        // 🗑️ Hapus foto dari storage
+    /** 🔹 Tampilkan data yang sudah dihapus (trash) */
+    public function trash()
+    {
+        $users = User::onlyTrashed()->get();
+        return view('page.user.trash', compact('users'));
+    }
+
+    /** 🔹 Restore data dari trash */
+    public function restore($id)
+    {
+        $user = User::onlyTrashed()->findOrFail($id);
+        $user->restore();
+        return redirect()->route('pengguna.trash')->with('success', 'Data pengguna berhasil dikembalikan!');
+    }
+
+    /** 🔹 Hapus permanen dari trash */
+    public function forceDelete($id)
+    {
+        $user = User::onlyTrashed()->findOrFail($id);
+
+        // Hapus foto permanen juga
         if ($user->foto && Storage::exists('public/' . $user->foto)) {
             Storage::delete('public/' . $user->foto);
         }
 
-        $user->delete();
-
-        return redirect()->route('pengguna.index')->with('success', 'Data pengguna berhasil dihapus.');
+        $user->forceDelete();
+        return redirect()->route('pengguna.trash')->with('success', 'Data pengguna dihapus permanen!');
     }
 }
